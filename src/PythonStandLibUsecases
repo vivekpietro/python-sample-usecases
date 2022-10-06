@@ -1,0 +1,82 @@
+import csv
+import pprint
+from collections import Counter
+
+#  Not be using attempt 1
+# # Read attempt 1
+# users_list = []
+#
+# with open('users.csv', 'r') as f:
+#     for line in f:
+#         users_list.append(line.split(','))
+#
+# # print(users_list)
+
+# Read attempt 2
+
+
+"""
+Read Users csv file
+"""
+users_dict = {}
+with open('users.csv', newline="") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        user_id_list = row["user_id"]
+        users_dict[user_id_list] = row
+
+# pprint.pprint(users_dict, width=200, sort_dicts=False)
+
+
+"""
+Filter records where is_active is True
+"""
+active_users_dict = {key: value for key, value in users_dict.items() if value['is_active'] == "True"}
+# pprint.pprint(active_users_dict, width=200, sort_dicts=False)
+
+
+"""
+Read transactions.csv file
+"""
+transactions_dict = {}
+with open("transactions.csv", newline="") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        transaction_id_list = row['transaction_id']
+        transactions_dict[transaction_id_list] = row
+
+# pprint.pprint(transactions_dict, width=800, sort_dicts=False)
+
+
+"""
+Filter transactions where is_blocked=False
+"""
+unblocked_transactions_dict = {key: value for key, value in transactions_dict.items() if value['is_blocked'] == "False"}
+# pprint.pprint(unblocked_transactions_dict, width=800, sort_dicts=False)
+
+
+"""
+Pick those transactions for which the users are active
+"""
+check_dict = {key:value for key, value in unblocked_transactions_dict.items() if value['user_id'] in [k for k in active_users_dict] }
+print("\n")
+pprint.pprint(check_dict, width=800, sort_dicts=False)
+
+
+"""
+Aggregating based on transaction_category_id
+"""
+
+transaction_category_id_dict = {}
+
+for key, value in check_dict.items():
+    transaction_category_id = value['transaction_category_id']
+    if transaction_category_id not in transaction_category_id_dict:
+        transaction_category_id_dict[transaction_category_id] = {'sum_amount': 0, 'all_users_list': [], 'transaction_category_id':transaction_category_id}
+    transaction_category_id_dict[transaction_category_id]['sum_amount'] += float(value['transaction_amount'])
+    transaction_category_id_dict[transaction_category_id]['all_users_list'].append(value['user_id'])
+
+pprint.pprint(transaction_category_id_dict, width=800, sort_dicts=False)
+
+final_list = [[value['transaction_category_id'], value['sum_amount'], len(Counter(value['all_users_list']).keys())] for value in transaction_category_id_dict.values()]
+pprint.pprint(final_list, width=800, sort_dicts=False)
