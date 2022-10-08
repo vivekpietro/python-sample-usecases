@@ -1,8 +1,8 @@
 -- create
 CREATE TABLE EMPLOYEE (
-  t_id varchar(30) PRIMARY KEY,
+  transaction_id varchar(30) PRIMARY KEY,
   user_id varchar(30) NOT NULL,
-  date1 date NOT NULL,
+  date date NOT NULL,
   temp integer
 );
 
@@ -17,18 +17,38 @@ insert into EMPLOYEE values
 ;
 
 
--- this thing works
--- select a.t_id, a.user_id, a.date1 , b.date1, a.temp, b.temp from EMPLOYEE a join EMPLOYEE b on 
--- a.temp < b.temp and b.temp <= a.temp + 2
--- order by a.t_id;
+-- QUERY DEFINITION:
+-- The transactions table will be scanned twice since it is being self joined.
+-- Post scan, the table will be hash joined based on the given conditions.
+-- The above result set is aggregated based on the conditions provided.
 
-select op.t_id, op.user_id, op.a_date, count(op.b_date) as cnt from (
-select distinct a.t_id, a.user_id, a.date1 as a_date, b.date1 as b_date from EMPLOYEE a left outer join EMPLOYEE b on 
-a.date1 > b.date1
-and
-b.date1 > a.date1 - interval 7 day
-and
-a.user_id = b.user_id
-order by a.t_id
-)op
-group by op.t_id, op.user_id, op.a_date
+-- TO RUN:
+-- Just replace the table name `transaction` with your table name.
+
+select
+   op.transaction_id,
+   op.user_id,
+   op.a_date as date,
+   count(op.b_date) as ` # Transaction within previous 7 days`
+from
+   (
+      select
+         a.transaction_id,
+         a.user_id,
+         a.date as a_date,
+         b.date as b_date
+      from
+         transactions a
+         left outer join
+            transactions b
+            on a.date > b.date
+            and b.date > a.date - interval 7 day
+            and a.user_id = b.user_id
+      order by
+         a.transaction_id
+   )
+   op
+group by
+   op.transaction_id,
+   op.user_id,
+   op.a_date
