@@ -1,23 +1,31 @@
+"""
+Python Job : To read multiple csv files -> Filter and Join based on conditions and apply aggregation and ordering. This needs to be done with only standard libraries.
+
+TO RUN :
+Just need the transactions.csv and users.csv file in the project src folder.
+
+transactions.csv (sample data below)
+transaction_id,date,user_id,is_blocked,transaction_amount,transaction_category_id
+94952ac5-df3b-47e4-bab7-004dd8bb6327,2022-08-19,48a1293f-3b8e-4187-9098-7a723e5dd981,True,63.06,8
+274d8812-24a2-49e0-8ebd-7a0a0754604d,2022-10-02,d78d57ba-f68c-4b89-a76f-502a03b36844,True,41.22,6
+251e18f2-7f88-408c-9b69-a03fa388c274,2022-07-12,c18dbef1-46b8-46bd-aefb-788d7bfbb4e9,True,33.40,7
+
+user.csv(sample data below)
+user_id,is_active
+99ce2b5c-3b91-4742-9123-41c3cba0688d,False
+b281c338-7f62-430d-8835-11998f80fec4,True
+8ba39382-5839-4f8d-ae63-20e032d840ba,True
+
+"""
+
+
 import csv
 import pprint
 from collections import Counter
 
-#  Not be using attempt 1
-# # Read attempt 1
-# users_list = []
-#
-# with open('users.csv', 'r') as f:
-#     for line in f:
-#         users_list.append(line.split(','))
-#
-# # print(users_list)
+# pprint package is used for better readability
 
-# Read attempt 2
-
-
-"""
-Read Users csv file
-"""
+# Read users.csv file
 users_dict = {}
 with open('users.csv', newline="") as f:
     reader = csv.DictReader(f)
@@ -25,19 +33,17 @@ with open('users.csv', newline="") as f:
         user_id_list = row["user_id"]
         users_dict[user_id_list] = row
 
+# Uncomment to see users.csv data in dictionary
 # pprint.pprint(users_dict, width=200, sort_dicts=False)
 
-
-"""
-Filter records where is_active is True
-"""
+# Filter records where is_active is True
 active_users_dict = {key: value for key, value in users_dict.items() if value['is_active'] == "True"}
+# Uncomment to see data in active_users_dict
 # pprint.pprint(active_users_dict, width=200, sort_dicts=False)
 
 
-"""
-Read transactions.csv file
-"""
+
+# Read transactions.csv file
 transactions_dict = {}
 with open("transactions.csv", newline="") as f:
     reader = csv.DictReader(f)
@@ -45,38 +51,50 @@ with open("transactions.csv", newline="") as f:
         transaction_id_list = row['transaction_id']
         transactions_dict[transaction_id_list] = row
 
+# Uncomment to see transactions..csv data in dictionary
 # pprint.pprint(transactions_dict, width=800, sort_dicts=False)
 
 
-"""
-Filter transactions where is_blocked=False
-"""
+# Filter transactions where is_blocked=False
 unblocked_transactions_dict = {key: value for key, value in transactions_dict.items() if value['is_blocked'] == "False"}
+# Uncomment to see data in unblocked_transactions_dict
 # pprint.pprint(unblocked_transactions_dict, width=800, sort_dicts=False)
 
 
-"""
-Pick those transactions for which the users are active
-"""
-check_dict = {key:value for key, value in unblocked_transactions_dict.items() if value['user_id'] in [k for k in active_users_dict] }
-print("\n")
-pprint.pprint(check_dict, width=800, sort_dicts=False)
+# Pick those transactions for which the users are active
+active_users_transactions_dict = {key: value for key, value in unblocked_transactions_dict.items() if
+                                  value['user_id'] in [k for k in active_users_dict]}
+# Uncomment to see data in active_users_transactions_dict
+# pprint.pprint(active_users_transactions_dict, width=800, sort_dicts=False)
 
 
-"""
-Aggregating based on transaction_category_id
-"""
-
+# Aggregating based on transaction_category_id
 transaction_category_id_dict = {}
 
-for key, value in check_dict.items():
+for key, value in active_users_transactions_dict.items():
     transaction_category_id = value['transaction_category_id']
     if transaction_category_id not in transaction_category_id_dict:
-        transaction_category_id_dict[transaction_category_id] = {'sum_amount': 0, 'all_users_list': [], 'transaction_category_id':transaction_category_id}
+        # Create the structure of transaction_category_id_dict. It should have sum_amount (float), all_users (list) and
+        # transaction_category_id
+        transaction_category_id_dict[transaction_category_id] = {'sum_amount': 0.0, 'all_users_list': [],
+                                                                 'transaction_category_id': transaction_category_id}
+    # For each transaction_category_id, take sum of transaction_amount
     transaction_category_id_dict[transaction_category_id]['sum_amount'] += float(value['transaction_amount'])
+    # For each transaction_category_id, keep adding user_id into all_users_list
     transaction_category_id_dict[transaction_category_id]['all_users_list'].append(value['user_id'])
 
-pprint.pprint(transaction_category_id_dict, width=800, sort_dicts=False)
+# Uncomment to see data in transaction_category_id_dict
+# pprint.pprint(transaction_category_id_dict, width=800, sort_dicts=False)
 
-final_list = [[value['transaction_category_id'], value['sum_amount'], len(Counter(value['all_users_list']).keys())] for value in transaction_category_id_dict.values()]
-pprint.pprint(final_list, width=800, sort_dicts=False)
+# Generate list of list which contains transaction_category_id, sum of all transaction_amount for that transaction_category_id and
+# number if distinct users for that transaction_category_id
+final_list = [[value['transaction_category_id'], value['sum_amount'], len(Counter(value['all_users_list']).keys())] for
+              value in transaction_category_id_dict.values()]
+
+# Sort the list of list based on sum_amount in descending order
+final_list.sort(key=lambda x: x[1], reverse=True)
+
+# Printing the result onto the console
+for items in final_list:
+    print(items)
+
